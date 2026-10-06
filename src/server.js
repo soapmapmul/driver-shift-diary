@@ -13,7 +13,16 @@ const CONTENT_TYPES = {
   '.css': 'text/css; charset=utf-8',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
+  '.ico': 'image/x-icon',
+  '.json': 'application/json; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
+  '.wasm': 'application/wasm',
+  '.otf': 'font/otf',
+  '.ttf': 'font/ttf',
 };
+
+// Flutter-клиент (сборка flutter build web --base-href /app/) отдаётся по /app/.
+const APP_PREFIX = '/app/';
 
 class HttpError extends Error {
   constructor(status, code, message, extra = {}) {
@@ -70,7 +79,7 @@ function requestedDate(url, store) {
   return date;
 }
 
-export function createApp(store, { publicDir } = {}) {
+export function createApp(store, { publicDir, appDir } = {}) {
   const routes = {
     'GET /api/trips': (req, url) => {
       const date = requestedDate(url, store);
@@ -108,10 +117,18 @@ export function createApp(store, { publicDir } = {}) {
   };
 
   async function serveStatic(url, res) {
-    if (!publicDir) return false;
-    const rel = url.pathname === '/' ? 'index.html' : decodeURIComponent(url.pathname.slice(1));
-    const file = path.resolve(publicDir, rel);
-    if (!file.startsWith(path.resolve(publicDir) + path.sep)) return false;
+    if (url.pathname === '/app') {
+      res.writeHead(301, { Location: APP_PREFIX });
+      res.end();
+      return true;
+    }
+    const inApp = url.pathname.startsWith(APP_PREFIX);
+    const dir = inApp ? appDir : publicDir;
+    if (!dir) return false;
+    const pathname = inApp ? url.pathname.slice(APP_PREFIX.length - 1) : url.pathname;
+    const rel = pathname === '/' ? 'index.html' : decodeURIComponent(pathname.slice(1));
+    const file = path.resolve(dir, rel);
+    if (!file.startsWith(path.resolve(dir) + path.sep)) return false;
     try {
       const body = await readFile(file);
       res.writeHead(200, { 'Content-Type': CONTENT_TYPES[path.extname(file)] ?? 'application/octet-stream' });
@@ -141,6 +158,9 @@ export function createApp(store, { publicDir } = {}) {
           : new HttpError(404, 'not_found', 'Нет такого метода API');
       }
       if (req.method === 'GET' && (await serveStatic(url, res))) return;
+      if (url.pathname.startsWith(APP_PREFIX)) {
+        throw new HttpError(404, 'app_not_built', 'Flutter-клиент не собран: cd mobile && flutter build web --base-href /app/');
+      }
       throw new HttpError(404, 'not_found', 'Не найдено');
     } catch (err) {
       if (err instanceof HttpError) {

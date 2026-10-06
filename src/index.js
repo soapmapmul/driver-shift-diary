@@ -1,4 +1,5 @@
 import { copyFile, mkdir, access } from 'node:fs/promises';
+import { networkInterfaces } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createApp } from './server.js';
@@ -27,7 +28,13 @@ try {
 }
 
 const store = await TripStore.open(dataFile, { utcOffset });
-const server = createApp(store, { publicDir: path.join(root, 'public') });
+const server = createApp(store, {
+  publicDir: path.join(root, 'public'),
+  appDir: path.join(root, 'mobile', 'build', 'web'),
+});
 server.listen(port, () => {
   console.log(`Дневник смен: http://localhost:${port}  (данные: ${dataFile}, пояс UTC${utcOffset})`);
+  // Адреса в локальной сети: с них открывается приложение на телефоне.
+  const lan = Object.values(networkInterfaces()).flat().filter((a) => a.family === 'IPv4' && !a.internal);
+  for (const { address } of lan) console.log(`С телефона в той же Wi-Fi: http://${address}:${port}/app/`);
 });

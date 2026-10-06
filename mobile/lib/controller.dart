@@ -9,12 +9,14 @@ import 'api.dart';
 import 'format.dart';
 import 'models.dart';
 
-/// Адрес сервера по умолчанию. Эмулятор Android видит компьютер как 10.0.2.2.
-/// Для телефона адрес задаётся в настройках приложения или через --dart-define=API_URL=...
+/// Адрес сервера по умолчанию:
+///  - веб-версию отдаёт сам сервер (/app/), поэтому API на том же адресе, что и страница;
+///  - эмулятор Android видит компьютер как 10.0.2.2;
+///  - для телефона адрес задаётся в настройках приложения или через --dart-define=API_URL=...
 String get defaultApiUrl {
   const fromEnv = String.fromEnvironment('API_URL');
   if (fromEnv.isNotEmpty) return fromEnv;
-  return kIsWeb ? 'http://localhost:3000' : 'http://10.0.2.2:3000';
+  return kIsWeb ? Uri.base.origin : 'http://10.0.2.2:3000';
 }
 
 /// Ключ идемпотентности: случайные 128 бит.

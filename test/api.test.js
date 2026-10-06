@@ -93,3 +93,28 @@ test('CORS: preflight и заголовок в ответах API (для Flutte
   const res = await fetch(base + '/api/days');
   assert.equal(res.headers.get('access-control-allow-origin'), '*');
 });
+
+test('Flutter-клиент отдаётся по /app/, без сборки — понятная ошибка', async () => {
+  const { mkdtemp, writeFile, rm } = await import('node:fs/promises');
+  const { tmpdir } = await import('node:os');
+  const path = await import('node:path');
+  const appDir = await mkdtemp(path.join(tmpdir(), 'app-'));
+  await writeFile(path.join(appDir, 'index.html'), '<title>flutter</title>');
+  const app = createApp(new TripStore(), { appDir });
+  await new Promise((resolve) => app.listen(0, resolve));
+  const url = `http://127.0.0.1:${app.address().port}`;
+  try {
+    const redirect = await fetch(url + '/app', { redirect: 'manual' });
+    assert.equal(redirect.status, 301);
+    assert.equal(redirect.headers.get('location'), '/app/');
+    assert.match(await (await fetch(url + '/app/')).text(), /flutter/);
+    assert.equal((await fetch(url + '/app/../package.json')).status, 404);
+  } finally {
+    app.close();
+    await rm(appDir, { recursive: true, force: true });
+  }
+
+  const missing = await fetch(base + '/app/');
+  assert.equal(missing.status, 404);
+  assert.equal((await missing.json()).error.code, 'app_not_built');
+});
