@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  server:
+    name: Сервер (node --test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: npm test
+
+  mobile:
+    name: Flutter (analyze, test, APK)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.6
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+      - run: flutter build apk --release
+      - uses: actions/upload-artifact@v7
+        with:
+          name: driver-shift-diary-apk
+          path: mobile/build/app/outputs/flutter-apk/app-release.apk
+      # Свежий APK с main всегда лежит в релизе mobile-latest: ссылку можно открыть прямо на телефоне.
+      - name: Publish APK to release mobile-latest
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp build/app/outputs/flutter-apk/app-release.apk driver-shift-diary.apk
+          gh release delete mobile-latest --yes --cleanup-tag || true
+          gh release create mobile-latest driver-shift-diary.apk \
+            --target "$GITHUB_SHA" \
+            --title "APK с main" \
+            --notes "Сборка из коммита $GITHUB_SHA. Адрес сервера задаётся в приложении (значок настроек)."

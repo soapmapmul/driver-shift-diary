@@ -81,3 +81,15 @@ test('POST: ошибки валидации с перечнем полей', asy
   assert.equal(broken.status, 400);
   assert.equal(broken.body.error.code, 'invalid_json');
 });
+
+test('CORS: preflight и заголовок в ответах API (для Flutter Web)', async () => {
+  const preflight = await fetch(base + '/api/trips', {
+    method: 'OPTIONS',
+    headers: { Origin: 'http://localhost:5000', 'Access-Control-Request-Method': 'POST' },
+  });
+  assert.equal(preflight.status, 204);
+  assert.match(preflight.headers.get('access-control-allow-methods'), /POST/);
+
+  const res = await fetch(base + '/api/days');
+  assert.equal(res.headers.get('access-control-allow-origin'), '*');
+});

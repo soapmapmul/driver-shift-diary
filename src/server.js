@@ -24,8 +24,17 @@ class HttpError extends Error {
   }
 }
 
+// API открыт для других источников: Flutter Web во время разработки работает на своём порту.
+// Авторизации нет, cookies не используются, поэтому «*» здесь безопасен.
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Max-Age': '86400',
+};
+
 function sendJson(res, status, body) {
-  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', ...CORS_HEADERS });
   res.end(JSON.stringify(body));
 }
 
@@ -116,6 +125,10 @@ export function createApp(store, { publicDir } = {}) {
   return createServer(async (req, res) => {
     const url = new URL(req.url, 'http://localhost');
     try {
+      if (req.method === 'OPTIONS' && url.pathname.startsWith('/api/')) {
+        res.writeHead(204, CORS_HEADERS);
+        return res.end();
+      }
       const handler = routes[`${req.method} ${url.pathname}`];
       if (handler) {
         const [status, body] = await handler(req, url);
