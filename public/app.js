@@ -179,16 +179,33 @@ const newId = () =>
   'c-' + (crypto.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`);
 const localInput = (ms) => new Date(ms).toISOString().slice(0, 16);
 
+const SLOT_MS = 20 * 60_000;
+const GAP_MS = 5 * 60_000;
+
+/**
+ * Время начала для новой поездки: свободные 20 минут внутри выбранного дня.
+ * Сначала — сразу после самой поздней поездки, затем — после более ранних,
+ * затем 09:00 и 00:00. Ночная поездка, закончившаяся после полуночи,
+ * не уводит подсказку на следующий день.
+ */
+function suggestStart() {
+  const dayStart = dateUtc(state.date);
+  const dayEnd = dayStart + 86_400_000;
+  const busy = state.trips.map((t) => [wall(t.start).getTime(), wall(t.end).getTime()]);
+  const fits = (from) =>
+    from >= dayStart && from + SLOT_MS <= dayEnd && busy.every(([s, e]) => from + SLOT_MS <= s || from >= e);
+  const candidates = [...busy.map(([, e]) => e + GAP_MS).reverse(), dayStart + 9 * 3_600_000, dayStart];
+  return candidates.find(fits) ?? dayStart + 9 * 3_600_000;
+}
+
 function openForm() {
   form.reset();
   commissionTouched = false;
   pendingId = newId();
   showErrors([]);
-  // начало — после последней поездки дня, иначе 09:00
-  const last = state.trips.at(-1);
-  const startMs = last ? wall(last.end).getTime() + 5 * 60_000 : dateUtc(state.date) + 9 * 3_600_000;
+  const startMs = suggestStart();
   form.start.value = localInput(startMs);
-  form.end.value = localInput(startMs + 20 * 60_000);
+  form.end.value = localInput(startMs + SLOT_MS);
   dialog.showModal();
   form.amount.focus();
 }
