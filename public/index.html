@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Дневник смен</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23e8a317'/%3E%3Cpath d='M8 20l3-8h10l3 8v4h-3v-2H11v2H8z' fill='%23181818'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <h1>Дневник смен</h1>
+    <nav class="day-nav" aria-label="Выбор дня">
+      <button id="prev" class="icon-btn" aria-label="Предыдущий день">‹</button>
+      <label class="date-pick">
+        <span id="date-label" class="date-label"></span>
+        <input id="date-input" type="date" aria-label="Дата">
+      </label>
+      <button id="next" class="icon-btn" aria-label="Следующий день">›</button>
+    </nav>
+    <div id="day-chips" class="chips" aria-label="Дни с поездками"></div>
+  </header>
+
+  <main>
+    <section class="summary" aria-labelledby="summary-title">
+      <h2 id="summary-title" class="visually-hidden">Сводка за день</h2>
+      <div class="hero">
+        <div class="hero-label">На руки</div>
+        <div id="s-net" class="hero-value">—</div>
+        <div id="s-sub" class="hero-sub"></div>
+      </div>
+      <dl class="stats">
+        <div><dt>Поездок</dt><dd id="s-trips">—</dd></div>
+        <div><dt>Выручка</dt><dd id="s-revenue">—</dd></div>
+        <div><dt>Комиссия</dt><dd id="s-commission">—</dd></div>
+        <div><dt>В пути</dt><dd id="s-drive">—</dd></div>
+      </dl>
+      <div class="split">
+        <div class="split-bar" id="split-bar" aria-hidden="true"><span class="cash"></span><span class="card"></span></div>
+        <div class="split-legend">
+          <div><i class="dot cash"></i>Наличные <b id="s-cash">—</b> <small id="s-cash-n"></small></div>
+          <div><i class="dot card"></i>Карта <b id="s-card">—</b> <small id="s-card-n"></small></div>
+        </div>
+        <p id="s-balance" class="balance"></p>
+      </div>
+    </section>
+
+    <section aria-labelledby="timeline-title">
+      <h2 id="timeline-title" class="section-title">Смена по часам</h2>
+      <div class="timeline" id="timeline">
+        <div class="timeline-track" id="timeline-track"></div>
+        <div class="timeline-scale"><span>0</span><span>6</span><span>12</span><span>18</span><span>24</span></div>
+      </div>
+    </section>
+
+    <section aria-labelledby="trips-title">
+      <div class="section-head">
+        <h2 id="trips-title" class="section-title">Поездки</h2>
+        <button id="open-form" class="btn">+ Добавить</button>
+      </div>
+      <ol id="trips" class="trips"></ol>
+      <p id="empty" class="empty" hidden>В этот день поездок нет.</p>
+    </section>
+  </main>
+
+  <dialog id="trip-dialog" aria-labelledby="form-title">
+    <form id="trip-form" novalidate>
+      <h2 id="form-title">Новая поездка</h2>
+      <div class="row">
+        <label>Начало<input name="start" type="datetime-local" required></label>
+        <label>Окончание<input name="end" type="datetime-local" required></label>
+      </div>
+      <div class="row">
+        <label>Сумма, ₸<input name="amount" type="number" inputmode="decimal" min="0" step="0.01" required></label>
+        <label>Комиссия, ₸<input name="commission" type="number" inputmode="decimal" min="0" step="0.01" required>
+          <small class="hint">по умолчанию 15% от суммы</small></label>
+      </div>
+      <fieldset class="pay">
+        <legend>Оплата</legend>
+        <label><input type="radio" name="payment" value="card" checked> Карта</label>
+        <label><input type="radio" name="payment" value="cash"> Наличные</label>
+      </fieldset>
+      <ul id="form-errors" class="form-errors" role="alert"></ul>
+      <div class="actions">
+        <button type="button" id="cancel" class="btn ghost">Отмена</button>
+        <button type="submit" id="submit" class="btn">Сохранить</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

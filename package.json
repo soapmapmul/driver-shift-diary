@@ -1,0 +1,15 @@
+{
+  "name": "driver-shift-diary",
+  "version": "1.0.0",
+  "description": "Дневник смен водителя: API поездок со сводкой за день и веб-клиент",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node --test"
+  },
+  "license": "MIT"
+}
